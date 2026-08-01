@@ -1,14 +1,12 @@
 import os
-import asyncio
 import threading
 import time
 import requests
 from datetime import datetime
 import pytz
 from flask import Flask, render_template_string
-from aiogram import Bot, Dispatcher, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.filters import Command
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # -------------------------------------------------------------
 # 1. AKSIYA VA NARX MANTIQI (Tashkent vaqti bilan UTC+5)
@@ -23,9 +21,8 @@ def get_current_price_info():
     
     # 15:30 dan 17:30 gacha aksiya vaqti
     start_time = now.replace(hour=15, minute=30, second=0, microsecond=0)
-    end_time = now.replace(hour=17, minute=0, second=0, microsecond=0) + pytz.timezone('Asia/Tashkent').localize(datetime.min).resolution * 30 * 60  # 17:30
+    end_time = now.replace(hour=17, minute=30, second=0, microsecond=0)
     
-    # Agar hozirgi vaqt 15:30 va 17:30 oralig'ida bo'lsa
     if start_time <= now <= end_time:
         discounted_price = int(ORIGINAL_PRICE * (1 - DISCOUNT_PERCENT / 100))
         return {
@@ -79,7 +76,7 @@ def run_flask():
     app.run(host="0.0.0.0", port=port)
 
 # -------------------------------------------------------------
-# 3. SELF-PING (Render 24/7 o'chmasligi uchun)
+# 3. SELF-PING (Render uxlab qolmasligi uchun)
 # -------------------------------------------------------------
 RENDER_URL = os.getenv("RENDER_EXTERNAL_URL", "https://saytingiz-nomi.onrender.com")
 
@@ -92,79 +89,72 @@ def keep_alive():
             pass
 
 # -------------------------------------------------------------
-# TELEGRAM BOT (Aiogram v3)
+# 4. TELEGRAM BOT HANDLERLARI (python-telegram-bot)
 # -------------------------------------------------------------
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8909821057:AAHMDT9m2NsxuFiaykmWajuIsY4wDaK0tSY")
 
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()
-
-# 1. /start buyrug'i
-@dp.message(F.text == "/start")
-async def start_cmd(message: Message):
-    await message.answer(
+async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
         "👋 Salom! Robox akkauntlar do'koniga xush kelibsiz!\n\n"
         "Mavjud akkauntlarni ko'rish va sotib olish uchun /buy buyrug'ini yuboring."
     )
 
-# 2. /buy buyrug'i
-@dp.message(F.text == "/buy")
-async def show_accounts(message: Message):
+async def cmd_buy(update: Update, context: ContextTypes.DEFAULT_TYPE):
     price_info = get_current_price_info()
     
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=price_info["text_button"], 
-                    callback_data="select_buy207"
-                )
-            ]
-        ]
-    )
-    await message.answer(
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(text=price_info["text_button"], callback_data="select_buy207")]
+    ])
+    
+    await update.message.reply_text(
         "🛒 **Mavjud Akkauntlar:**\n\n"
         "Sotib olmoqchi bo'lgan akkauntingiz ustiga bosing:",
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
-# 3. BUY207 tugmasi bosilganda To'lov ma'lumotlari chiqadi
-@dp.callback_query(F.data == "select_buy207")
-async def process_payment_info(callback: CallbackQuery):
-    await callback.message.delete()
-    price_info = get_current_price_info()
-    
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="📲 Chekni yuborish (Admin)", 
-                    url="https://t.me/abduraxmonova_uz"
-                )
-            ]
-        ]
-    )
-    
-    payment_text = (
-        f"✅ Siz tanladingiz: **GONZA (BUY207)**\n"
-        f"{price_info['display_text']}\n\n"
-        f"📌 **To'lov qilish tartibi:**\n"
-        f"1. Quyidagi kartaga **{price_info['price']:,} so'm** o'tkazing:\n".replace(',', ' ') +
-        f"💳 Karta raqami: `6262910225844612`\n\n"
-        f"2. To'lov cheki skrinshotini @abduraxmonova_uz profiliga yuboring.\n"
-        f"3. Admin to'lovni tekshirib, 2-5 daqiqa ichida login va parolni beradi!"
-    )
-    
-    await callback.message.answer(payment_text, reply_markup=keyboard, parse_mode="Markdown")
 
-async def run_bot():
-    print("[BOT]: Telegram Bot ishga tushdi...")
-    await dp.start_polling(bot)
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data == "select_buy207":
+        await query.message.delete()
+        price_info = get_current_price_info()
+        
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(text="📲 Chekni yuborish (Admin)", url="https://t.me/abduraxmonova_uz")]
+        ])
+        
+        payment_text = (
+            f"✅ Siz tanladingiz: **GONZA (BUY207)**\n"
+            f"{price_info['display_text']}\n\n"
+            f"📌 **To'lov qilish tartibi:**\n"
+            f"1. Quyidagi kartaga **{price_info['price']:,} so'm** o'tkazing:\n".replace(',', ' ') +
+            f"💳 Karta raqami: `6262910225844612`\n\n"
+            f"2. To'lov cheki skrinshotini @abduraxmonova_uz profiliga yuboring.\n"
+            f"3. Admin to'lovni tekshirib, 2-5 daqiqa ichida login va parolni beradi!"
+        )
+        
+        await query.message.reply_text(payment_text, reply_markup=keyboard, parse_mode="Markdown")
 
 # -------------------------------------------------------------
-# 5. ISHGA TUSHIRISH MARKAZI
+# 5. MAIN
 # -------------------------------------------------------------
-if __name__ == "__main__":
+def main():
+    # Flask Server va Self-Ping'ni alohida oqimlarda ishga tushiramiz
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=keep_alive, daemon=True).start()
-    asyncio.run(run_bot())
+
+    # Telegram Botni ishga tushirish
+    application = Application.builder().token(BOT_TOKEN).build()
+
+    application.add_handler(CommandHandler("start", cmd_start))
+    application.add_handler(CommandHandler("buy", cmd_buy))
+    application.add_handler(CommandHandler("sotibolish", cmd_buy))  # qo'shimcha so'z
+    application.add_handler(CallbackQueryHandler(button_handler))
+
+    print("[BOT]: python-telegram-bot ishga tushdi...")
+    application.run_polling()
+
+if __name__ == "__main__":
+    main()
