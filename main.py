@@ -8,7 +8,7 @@ from flask import Flask, render_template_string
 # -------------------------------------------------------------
 # 1. TELEGRAM BOT SOZLAMASI
 # -------------------------------------------------------------
-BOT_TOKEN = os.getenv("BOT_TOKEN", "TELEGRAM_BOT_TOKENINI_SHU_YERGA_YOZING")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8909821057:AAHMDT9m2NsxuFiaykmWajuIsY4wDaK0tSY")
 bot = telebot.TeleBot(BOT_TOKEN)
 
 @bot.message_handler(commands=['start'])
