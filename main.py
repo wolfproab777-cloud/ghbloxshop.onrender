@@ -8,6 +8,7 @@ import pytz
 from flask import Flask, render_template_string
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.filters import Command
 
 # -------------------------------------------------------------
 # 1. AKSIYA VA NARX MANTIQI (Tashkent vaqti bilan UTC+5)
@@ -99,15 +100,15 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 # 1. /start buyrug'i
-@dp.message(F.text == "/start")
+@dp.message(Command("start"))
 async def start_cmd(message: Message):
     await message.answer(
         "👋 Salom! Robox akkauntlar do'koniga xush kelibsiz!\n\n"
         "Mavjud akkauntlarni ko'rish va sotib olish uchun /buy buyrug'ini yuboring."
     )
 
-# 2. /buy bosilganda Akkauntlar ro'yxati (Dinamik narx bilan)
-@dp.message(F.text == "/buy")
+# 2. /buy buyrug'i
+@dp.message(Command("buy"))
 async def show_accounts(message: Message):
     price_info = get_current_price_info()
     
