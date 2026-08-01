@@ -92,7 +92,7 @@ def keep_alive():
             pass
 
 # -------------------------------------------------------------
-# 4. TELEGRAM BOT (Aiogram v3)
+# TELEGRAM BOT (Aiogram v3)
 # -------------------------------------------------------------
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8909821057:AAHMDT9m2NsxuFiaykmWajuIsY4wDaK0tSY")
 
@@ -100,15 +100,15 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 # 1. /start buyrug'i
-@dp.message(Command("start"))
+@dp.message(F.text.in__{"/start", "start", "/START"})
 async def start_cmd(message: Message):
     await message.answer(
         "👋 Salom! Robox akkauntlar do'koniga xush kelibsiz!\n\n"
         "Mavjud akkauntlarni ko'rish va sotib olish uchun /buy buyrug'ini yuboring."
     )
 
-# 2. /buy buyrug'i
-@dp.message(Command("buy"))
+# 2. /buy buyrug'i (Barcha variantlarni tushunadigan qilib yozamiz)
+@dp.message(F.text.in__{"/buy", "buy", "/BUY", "sotib olish", "Buy"})
 async def show_accounts(message: Message):
     price_info = get_current_price_info()
     
@@ -129,7 +129,7 @@ async def show_accounts(message: Message):
         parse_mode="Markdown"
     )
 
-# 3. Akkaunt tanlanganda To'lov ma'lumotlari chiqadi
+# 3. BUY207 tugmasi bosilganda To'lov ma'lumotlari chiqadi
 @dp.callback_query(F.data == "select_buy207")
 async def process_payment_info(callback: CallbackQuery):
     await callback.message.delete()
