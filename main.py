@@ -100,15 +100,15 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 # 1. /start buyrug'i
-@dp.message(F.text.in__{"/start", "start", "/START"})
+@dp.message(F.text == "/start")
 async def start_cmd(message: Message):
     await message.answer(
         "👋 Salom! Robox akkauntlar do'koniga xush kelibsiz!\n\n"
         "Mavjud akkauntlarni ko'rish va sotib olish uchun /buy buyrug'ini yuboring."
     )
 
-# 2. /buy buyrug'i (Barcha variantlarni tushunadigan qilib yozamiz)
-@dp.message(F.text.in__{"/buy", "buy", "/BUY", "sotib olish", "Buy"})
+# 2. /buy buyrug'i
+@dp.message(F.text == "/buy")
 async def show_accounts(message: Message):
     price_info = get_current_price_info()
     
@@ -128,7 +128,6 @@ async def show_accounts(message: Message):
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
-
 # 3. BUY207 tugmasi bosilganda To'lov ma'lumotlari chiqadi
 @dp.callback_query(F.data == "select_buy207")
 async def process_payment_info(callback: CallbackQuery):
