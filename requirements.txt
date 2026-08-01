@@ -1,7 +1,5 @@
-aiogram==3.4.1
+aiogram==3.10.0
 Flask==3.0.0
 gunicorn==21.2.0
 requests==2.31.0
 pytz==2024.1
-pydantic==2.6.1
-pydantic-core==2.16.2
